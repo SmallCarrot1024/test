@@ -1,0 +1,108 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.taobao.sophix.emas'
+android {
+    compileSdkVersion 26
+    buildToolsVersion "26.0.3"
+    defaultConfig {
+        applicationId "com.aliyun.emas.demo.sophix"
+        minSdkVersion 16
+        targetSdkVersion 23
+        ndk {
+            abiFilters "x86", "armeabi"  //默认只启用x86,armeabi
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    signingConfigs {
+        debug {
+            storeFile file(rootProject.rootDir.toString() + DEBUG_STOREFILE)
+            storePassword DEBUG_STOREPASSWORD
+            keyAlias DEBUG_KEYALIAS
+            keyPassword DEBUB_KEYPASSWORD
+        }
+
+        release {
+            storeFile file(rootProject.rootDir.toString() + RELEASE_STOREFILE)
+            storePassword RELEASE_STOREPASSWORD
+            keyAlias RELEASE_KEYALIAS
+            keyPassword RELEASE_KEYPASSWORD
+            v1SigningEnabled true
+            v2SigningEnabled Boolean.valueOf(V2_SIGNING)
+        }
+    }
+}
+
+dependencies {
+    api fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    api 'com.android.support.constraint:constraint-layout:1.1.3'
+    api 'com.android.support:appcompat-v7:26.1.0'
+    /************基础库 START**********/
+    api('com.alibaba:fastjson:1.1.54.android@jar') { transitive true }
+//    api('com.taobao.android:mtopsdk_allinone:3.0.9.3-open-SNAPSHOT@jar') { transitive true }
+    api('com.taobao.android:networksdk:3.3.7fix-open@jar') { transitive true }
+//    api('com.taobao.android:tnet4android:3.1.14.6@aar') { transitive true }
+    api('com.taobao.android:utdid4all:1.1.5.3_proguard@jar') { transitive true }
+    /************基础库 END**********/
+
+    /************SOPHIX START**********/
+    api('com.aliyun.ams:alicloud-android-hotfix:3.2.14') {
+        exclude group: 'com.aliyun.ams', module: 'alicloud-android-ut'
+    }
+    /************SOPHIX END**********/
+
+
+
+}
+
+apply from: 'common.gradle'
+group = MAVEN_BASE_GROUP
+version = android.defaultConfig.versionName + '-SNAPSHOT'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+publishing {//本地发布用
+
+    publications {
+        maven(MavenPublication) {
+            if (project.gradle.startParameter.toString().contains("Debug")) {
+                artifact "${project.buildDir}/sophix/${project.name}-debug.sar"
+                artifactId MAVEN_BASE_ARTIFACTID + "-debug"
+
+            } else {
+                artifact "${project.buildDir}/sophix/${project.name}-release.sar"
+                artifactId MAVEN_BASE_ARTIFACTID + "-release"
+
+            }
+        }
+    }
+
+    repositories {
+        if (version.endsWith("-SNAPSHOT")) {
+            maven {
+                url CUSTOM_REPOSITORY_HOST + "/repository/maven-snapshots/"
+                credentials {
+                    username = CUSTOM_REPOSITORY_USERNAME
+                    password = CUSTOM_REPOSITORY_PASSWORD
+                }
+            }
+        } else {
+            maven {
+                url CUSTOM_REPOSITORY_HOST + "/repository/maven-releases/"
+                credentials {
+                    username = CUSTOM_REPOSITORY_USERNAME
+                    password = CUSTOM_REPOSITORY_PASSWORD
+                }
+            }
+        }
+
+    }
+}
